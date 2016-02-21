@@ -17,8 +17,8 @@
 
 #include "wrd-rgb-led/NCP5623C.h"
 
-NCP5623C::NCP5623C(PinName sda, PinName scl)
-    : i2c(sda, scl),
+NCP5623C::NCP5623C(I2CEx& _i2c)
+    : i2c(_i2c),
       state(STATE_IDLE)
 {
     i2c.frequency(400000);
@@ -64,21 +64,17 @@ void NCP5623C::set(uint8_t new_red,
     setRegister(NCP5623C::SET_CURRENT, 0x01);
 }
 
-int NCP5623C::setRegister(register_t reg, uint8_t value)
+void NCP5623C::setRegister(register_t reg, uint8_t value)
 {
     memoryWrite = reg | (value & 0x1F);
 
-    I2C::event_callback_t fp(this, &NCP5623C::setRegisterDone);
+    FunctionPointer0<void> fp(this, &NCP5623C::setRegisterDone);
 
-    return i2c.transfer(PRIMARY_ADDRESS, &memoryWrite, 1, &memoryRead, 0, fp);
+    i2c.write(PRIMARY_ADDRESS, memoryWrite, &memoryRead, 0, fp);
 }
 
-void NCP5623C::setRegisterDone(Buffer txBuffer, Buffer rxBuffer, int code)
+void NCP5623C::setRegisterDone(void)
 {
-    (void) txBuffer;
-    (void) rxBuffer;
-    (void) code;
-
     /* Use state machine to set each color sequentially.
        Call set done handler when last color has been set.
     */

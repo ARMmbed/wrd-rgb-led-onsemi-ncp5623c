@@ -19,6 +19,7 @@
 #define __ONSEMI_NCP5623C_H__
 
 #include "mbed-drivers/mbed.h"
+#include "wrd-utilities/SharedModules.h"
 
 using namespace mbed::util;
 
@@ -45,7 +46,7 @@ public:
      * @param sda I2C data line.
      * @param scl I2C clock line.
      */
-    NCP5623C(PinName sda, PinName scl);
+    NCP5623C(I2CEx& _i2c);
 
     /**
      * @brief Set RGB color.
@@ -63,8 +64,8 @@ public:
     void set(uint8_t red, uint8_t green, uint8_t blue, FunctionPointer0<void> callback);
 
 private:
-    int setRegister(register_t reg, uint8_t value);
-    void setRegisterDone(Buffer txBuffer, Buffer rxBuffer, int code);
+    void setRegister(register_t reg, uint8_t value);
+    void setRegisterDone(void);
 
     typedef enum {
         STATE_IDLE,
@@ -79,7 +80,7 @@ private:
     uint8_t blue;
     FunctionPointer0<void> setDoneHandle;
 
-    I2C i2c;
+    I2CEx& i2c;
     char memoryWrite;
     char memoryRead;
 
