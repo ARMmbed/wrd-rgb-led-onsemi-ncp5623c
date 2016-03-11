@@ -17,8 +17,8 @@
 
 #include "wrd-rgb-led/NCP5623C.h"
 
-NCP5623C::NCP5623C(I2CEx& _i2c)
-    : i2c(_i2c),
+NCP5623C::NCP5623C(PinName sda, PinName scl)
+    : i2c(sda, scl),
       state(STATE_IDLE)
 {
     i2c.frequency(400000);
@@ -32,7 +32,7 @@ void NCP5623C::set(uint8_t new_red,
     /* For each color, round up values between 0 and 8 to lowest value. */
     if (new_red > 0)
     {
-        red = (new_red < 9) ? 1 : new_red >> 3;
+        red = (new_red < 9) ? 1 : (new_red >> 3) & 0x1F;
     }
     else
     {
@@ -41,7 +41,7 @@ void NCP5623C::set(uint8_t new_red,
 
     if (new_green > 0)
     {
-        green = (new_green < 9) ? 1 : new_green >> 3;
+        green = (new_green < 9) ? 1 : (new_green >> 3) & 0x1F;
     }
     else
     {
@@ -50,7 +50,7 @@ void NCP5623C::set(uint8_t new_red,
 
     if (new_blue > 0)
     {
-        blue = (new_blue < 9) ? 1 : new_blue >> 3;
+        blue = (new_blue < 9) ? 1 : (new_blue >> 3) & 0x1F;
     }
     else
     {
@@ -61,19 +61,13 @@ void NCP5623C::set(uint8_t new_red,
 
     state = STATE_SET_RED;
 
-    setRegister(NCP5623C::SET_CURRENT, 0x01);
+    i2c.write(PRIMARY_ADDRESS,
+              SET_CURRENT | 0x01,
+              &memoryWrite, 0,
+              this, &NCP5623C::writeDone);
 }
 
-void NCP5623C::setRegister(register_t reg, uint8_t value)
-{
-    memoryWrite = reg | (value & 0x1F);
-
-    FunctionPointer0<void> fp(this, &NCP5623C::setRegisterDone);
-
-    i2c.write(PRIMARY_ADDRESS, memoryWrite, &memoryRead, 0, fp);
-}
-
-void NCP5623C::setRegisterDone(void)
+void NCP5623C::writeDone(void)
 {
     /* Use state machine to set each color sequentially.
        Call set done handler when last color has been set.
@@ -81,17 +75,27 @@ void NCP5623C::setRegisterDone(void)
     switch(state)
     {
         case STATE_SET_RED:
-                        setRegister(NCP5623C::PWM1_CONTROL, red);
+                        i2c.write(PRIMARY_ADDRESS,
+                                  PWM1_CONTROL | red,
+                                  &memoryWrite, 0,
+                                  this, &NCP5623C::writeDone);
+
                         state = STATE_SET_GREEN;
                         break;
 
         case STATE_SET_GREEN:
-                        setRegister(NCP5623C::PWM2_CONTROL, green);
+                        i2c.write(PRIMARY_ADDRESS,
+                                  PWM2_CONTROL | green,
+                                  &memoryWrite, 0,
+                                  this, &NCP5623C::writeDone);
                         state = STATE_SET_BLUE;
                         break;
 
         case STATE_SET_BLUE:
-                        setRegister(NCP5623C::PWM3_CONTROL, blue);
+                        i2c.write(PRIMARY_ADDRESS,
+                                  PWM3_CONTROL | blue,
+                                  &memoryWrite, 0,
+                                  this, &NCP5623C::writeDone);
                         state = STATE_SET_DONE;
                         break;
 

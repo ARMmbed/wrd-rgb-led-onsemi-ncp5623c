@@ -19,7 +19,7 @@
 #define __WRD_RGB_LED_ONSEMI_H__
 
 #include "wrd-rgb-led/NCP5623C.h"
-#include "gpio-pcal64/PCAL64.h"
+#include "wrd-gpio-switch/DigitalOutEx.h"
 
 class RGBLEDImplementation
 {
@@ -29,10 +29,10 @@ public:
      * @details Pin configurations are pulled from Yotta config.
      */
     RGBLEDImplementation()
-        :   led(YOTTA_CFG_HARDWARE_WEARABLE_REFERENCE_DESIGN_RGB_LED_I2C_NAME),
-            ioexpander(YOTTA_CFG_HARDWARE_WEARABLE_REFERENCE_DESIGN_EXTERNAL_GPIO_I2C_NAME,
-                       PCAL64::SECONDARY_ADDRESS,
-                       YOTTA_CFG_HARDWARE_WEARABLE_REFERENCE_DESIGN_EXTERNAL_GPIO_PIN_IRQ2),
+        :   led(YOTTA_CFG_HARDWARE_WRD_RGB_LED_I2C_SDA,
+                YOTTA_CFG_HARDWARE_WRD_RGB_LED_I2C_SCL),
+            enable(YOTTA_CFG_HARDWARE_WRD_RGB_LED_ENABLE_PIN,
+                   YOTTA_CFG_HARDWARE_WRD_RGB_LED_ENABLE_LOCATION),
             red(0),
             green(0),
             blue(0)
@@ -54,18 +54,14 @@ public:
         /* If all colors are zero, turn off RGB using the I/O expander. */
         if ((new_red == 0) && (new_green == 0) && (new_blue == 0))
         {
-            ioexpander.set(PCAL64::P0_0, PCAL64::Output)
-                      .set(PCAL64::P0_0, PCAL64::Low)
-                      .callback(callback);
+            enable.write(0, callback);
         }
         /* If the RGB was off before, turn on RGB before sending colors. */
         else if ((red == 0) && (green == 0) && (blue == 0))
         {
             FunctionPointer0<void> fp(this, &RGBLEDImplementation::internalDelay);
 
-            ioexpander.set(PCAL64::P0_0, PCAL64::Output)
-                      .set(PCAL64::P0_0, PCAL64::High)
-                      .callback(fp);
+            enable.write(1, fp);
         }
         /* RGB is already on, set new colors. */
         else
@@ -108,7 +104,7 @@ private:
     }
 
     NCP5623C led;
-    PCAL64 ioexpander;
+    DigitalOutEx enable;
 
     uint8_t red;
     uint8_t green;
