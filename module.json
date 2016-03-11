@@ -1,6 +1,6 @@
 {
   "name": "wrd-rgb-led-onsemi-ncp5623c",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "Driver for the ON Semiconductor NCP5623C RGB LED driver.",
   "keywords": [],
   "author": "Marcus Chang <marcus.chang@arm.com>",
