@@ -19,7 +19,7 @@
 
 #include "wrd-rgb-led/RGBLEDImplementation.h"
 
-#if (YOTTA_CFG_HARDWARE_WEARABLE_REFERENCE_DESIGN_RGB_LED_PRESENT == 0)
+#if (YOTTA_CFG_HARDWARE_WRD_RGB_LED_PRESENT == 0)
 #error Platform not supported
 #endif
 
